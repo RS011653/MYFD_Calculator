@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FD Calculator</title>
+    
+    <!-- PWA Meta Tags for iOS, Android, and Windows -->
+    <meta name="theme-color" content="#0a4d68">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FD Calc">
+    <meta name="msapplication-TileColor" content="#0a4d68">
+    
+    <!-- Dynamic Manifest Link -->
+    <link id="manifest-link" rel="manifest" href="">
+    <link id="apple-touch-icon" rel="apple-touch-icon" href="">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f6; 
+        }
+        h1 { color: #0a4d68; }
+        .input-field:focus {
+            outline: none;
+            border-color: #05bfdb;
+            box-shadow: 0 0 0 3px rgba(5, 191, 219, 0.2);
+        }
+        /* Custom PWA Install Button Animation */
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .install-btn { animation: pulse-soft 2s infinite; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen p-4 md:p-8 flex justify-center items-start">
+
+    <main class="w-full max-w-2xl bg-white p-6 md:p-10 rounded-2xl shadow-xl mt-4 relative">
+        
+        <!-- PWA Install Button (Hidden by default, shown when app is installable) -->
+        <button id="install-app-btn" class="hidden absolute top-4 right-4 bg-[#0a4d68] text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg install-btn hover:bg-[#05bfdb] transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Install App
+        </button>
+
+        <!-- 1. Title and Introduction -->
+        <div class="text-center mb-8 mt-6 sm:mt-0">
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">💰 Fixed Deposit Calculator</h1>
+            <p class="text-gray-600 mb-2">Fixed Deposits are a great way to invest for those who rate safety higher than returns.</p>
+            <p class="text-gray-600">This Fixed Deposit (FD) Calculator helps you find out how much interest you can earn and the value of your investment on Maturity.</p>
+            
+            <div id="offline-badge" class="hidden mt-3 inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full border border-yellow-300">
+                ⚡ Working Offline
+            </div>
+            
+            <hr class="mt-6 border-gray-200">
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div id="error-message" class="hidden mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Error!</strong> <span id="error-text">Please enter valid values.</span>
+        </div>
+        <div id="success-message" class="hidden mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">Calculation Successful! Inputs cleared.</span>
+        </div>
+
+        <!-- 2. Input Section -->
+        <form id="fd-form" class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">Enter Your FD Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="principal" class="block text-sm font-medium text-gray-700 mb-1">Principal (Rs.)</label>
+                    <input type="number" id="principal" min="0" step="1000" placeholder="e.g., 100000" required
+                        class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                </div>
+                <div>
+                    <label for="rate" class="block text-sm font-medium text-gray-700 mb-1">Rate of Interest (%)</label>
+                    <input type="number" id="rate" min="0" max="100" step="0.1" placeholder="e.g., 7.5" required
+                        class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="period" class="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="period" min="1" step="1" placeholder="e.g., 1" required
+                            class="input-field w-2/3 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <select id="period-unit" class="input-field w-1/3 px-2 py-2 border border-gray-300 rounded-lg bg-white">
+                            <option value="years">Year(s)</option>
+                            <option value="months">Month(s)</option>
+                            <option value="days">Day(s)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="frequency" class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                    <select id="frequency" class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                        <option value="4" selected>Compounded Quarterly</option>
+                        <option value="12">Compounded Monthly</option>
+                        <option value="2">Compounded Half-Yearly</option>
+                        <option value="1">Compounded Yearly</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3. Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                <button type="button" id="btn-calculate" 
+                    class="flex-1 bg-[#05bfdb] hover:bg-[#088395] text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md">
+                    CALCULATE
+                </button>
+                <button type="button" id="btn-clear" 
+                    class="flex-1 bg-[#5f6368] hover:bg-[#3c4043] text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md">
+                    CLEAR
+                </button>
+            </div>
+        </form>
+
+        <!-- 4. Results Container -->
+        <div id="results-container" class="hidden mt-8 animation-fade-in">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Results</h3>
+            <div style="background-color:#e0f2f1; padding: 20px; border-radius: 10px; border: 1px solid #009688; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                <p style="font-size: 18px; color: #333; margin-bottom: 8px;">
+                    <b>Principal Amount:</b> <span id="res-principal">₹ 0.00</span>
+                </p>
+                <p style="font-size: 18px; color: #333; margin-bottom: 16px;">
+                    <b>Total Interest Earned:</b> <span id="res-interest">₹ 0.00</span>
+                </p>
+                <hr style="border-color: #b2dfdb; margin-bottom: 16px;">
+                <p style="font-size: 22px; color: #00796b;">
+                    <b>Maturity Value:</b> <span id="res-maturity">₹ 0.00</span>
+                </p>
+            </div>
+        </div>
+        <hr class="mt-8 border-gray-200">
+        <p class="text-sm text-gray-500 mt-4 italic text-center">
+            Note: In India, banks typically use quarterly compounding to calculate interest in rupees.
+        </p>
+    </main>
+
+    <script>
+        // --- 1. DYNAMIC PWA SETUP (Manifest & Icons via Data URIs) ---
+        // Create an SVG icon dynamically so it works entirely offline without external image files
+        const svgIcon = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <rect width="512" height="512" fill="#0a4d68" rx="112"/>
+            <rect x="32" y="32" width="448" height="448" fill="#05bfdb" rx="96"/>
+            <text x="50%" y="55%" font-size="240" font-family="Arial" text-anchor="middle" dominant-baseline="middle">💰</text>
+        </svg>`;
+        const iconBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgIcon)));
+        
+        // Generate Web App Manifest
+        const manifest = {
+            name: "Fixed Deposit Calculator",
+            short_name: "FD Calc",
+            description: "Calculate your FD returns quickly and securely offline.",
+            start_url: window.location.href.split('?')[0],
+            display: "standalone",
+            background_color: "#f0f2f6",
+            theme_color: "#0a4d68",
+            icons: [
+                { src: iconBase64, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+                { src: iconBase64, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+            ]
+        };
+        
+        // Inject Manifest and Icons into DOM
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+        document.getElementById('apple-touch-icon').href = iconBase64;
+
+
+        // --- 2. SERVICE WORKER FOR OFFLINE CACHING ---
+        // Note: Browsers strictly prohibit loading Service Workers from Blob/Data URIs for security reasons.
+        // We simulate the offline data caching experience using LocalStorage instead, keeping this a strict single-file solution.
+        // Below is the stringified SW code that *would* be in an sw.js file for standard hosting.
+        const swCode = `
+            self.addEventListener('install', (e) => {
+                e.waitUntil(caches.open('fd-calc-v1').then((c) => c.addAll([location.href])));
+            });
+            self.addEventListener('fetch', (e) => {
+                e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+            });
+        `;
+        
+        // --- 3. PWA INSTALLATION PROMPT ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-app-btn');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden'); // Show custom install button
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.classList.add('hidden');
+                deferredPrompt = null;
+            }
+        });
+
+        // Offline Status Detection
+        window.addEventListener('offline', () => document.getElementById('offline-badge').classList.remove('hidden'));
+        window.addEventListener('online', () => document.getElementById('offline-badge').classList.add('hidden'));
+        if (!navigator.onLine) document.getElementById('offline-badge').classList.remove('hidden');
+
+
+        // --- 4. APP LOGIC (Calculation & Local Caching) ---
+        const elements = {
+            principal: document.getElementById('principal'),
+            rate: document.getElementById('rate'),
+            period: document.getElementById('period'),
+            periodUnit: document.getElementById('period-unit'),
+            frequency: document.getElementById('frequency')
+        };
+        
+        const currencyFormatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
+
+        // Load Last Saved State (Offline Support alternative)
+        function loadState() {
+            const state = JSON.parse(localStorage.getItem('fd_state'));
+            if (state) {
+                Object.keys(elements).forEach(key => { if(state[key]) elements[key].value = state[key]; });
+            }
+        }
+        
+        // Save State
+        function saveState() {
+            const state = {};
+            Object.keys(elements).forEach(key => state[key] = elements[key].value);
+            localStorage.setItem('fd_state', JSON.stringify(state));
+        }
+
+        document.getElementById('btn-calculate').addEventListener('click', () => {
+            document.getElementById('error-message').classList.add('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+
+            const p = parseFloat(elements.principal.value);
+            const r = parseFloat(elements.rate.value);
+            const periodVal = parseFloat(elements.period.value);
+            const freq = parseInt(elements.frequency.value);
+
+            if (!p || p <= 0 || !r || r <= 0 || !periodVal || periodVal <= 0) {
+                document.getElementById('error-message').classList.remove('hidden');
+                document.getElementById('results-container').classList.add('hidden');
+                return;
+            }
+
+            let t = elements.periodUnit.value === "days" ? periodVal / 365.0 : 
+                    elements.periodUnit.value === "months" ? periodVal / 12.0 : periodVal;
+
+            // A = P * (1 + r/n)^(n*t)
+            const maturity = p * Math.pow((1 + (r / 100.0) / freq), (freq * t));
+            const interest = maturity - p;
+
+            document.getElementById('res-principal').textContent = currencyFormatter.format(p);
+            document.getElementById('res-interest').textContent = currencyFormatter.format(interest);
+            document.getElementById('res-maturity').textContent = currencyFormatter.format(maturity);
+            
+            document.getElementById('results-container').classList.remove('hidden');
+            saveState(); // Cache data for returning users
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            document.getElementById('fd-form').reset();
+            document.getElementById('results-container').classList.add('hidden');
+            localStorage.removeItem('fd_state');
+            
+            const msg = document.getElementById('success-message');
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
+        });
+
+        loadState(); // Initialize state on load
+    </script>
+</body>
+</html>
